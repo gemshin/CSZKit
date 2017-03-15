@@ -41,8 +41,8 @@ public class BoundCheckWindow : EditorWindow
     }
 
     const int SEGMENT = 32;
-    readonly Vector3[] VERTICES_CIRCLE;
-    readonly Vector3[] VERTICES_BOX =
+    readonly Vector3[] VERTICES_CIRCLE_2D;
+    readonly Vector3[] VERTICES_BOX_2D =
             { new Vector3(-0.5f, 0.5f), new Vector3(0.5f, 0.5f)
             , new Vector3(0.5f, -0.5f), new Vector3(-0.5f, -0.5f)
             , new Vector3(-0.5f, 0.5f)};
@@ -58,7 +58,7 @@ public class BoundCheckWindow : EditorWindow
     Vector2 _boundPosition2D_A = Vector2.zero;
     Vector2 _boundPosition2D_B = Vector2.right;
     Vector2 _boundSize2D = Vector2.one;
-    Vector2[] _boundVertices2D_trianle = new Vector2[3]; // only Triangle
+    Vector3[] _boundVertices2D_trianle = new Vector3[3]; // only Triangle
     float _boundRotation2D = 0f;
     #endregion
 
@@ -90,9 +90,13 @@ public class BoundCheckWindow : EditorWindow
 
     BoundCheckWindow()
     {
-        VERTICES_CIRCLE = new Vector3[SEGMENT + 1];
+        VERTICES_CIRCLE_2D = new Vector3[SEGMENT + 1];
         for (int i = 0; i < SEGMENT + 1; ++i)
-            VERTICES_CIRCLE[i] = new Vector3(Mathf.Sin(((float)i / SEGMENT) * Mathf.PI * 2), Mathf.Cos(((float)i / SEGMENT) * Mathf.PI * 2));
+            VERTICES_CIRCLE_2D[i] = new Vector3(Mathf.Sin(((float)i / SEGMENT) * Mathf.PI * 2), Mathf.Cos(((float)i / SEGMENT) * Mathf.PI * 2));
+
+        _boundVertices2D_trianle[0] = new Vector3(0f, 0.5f, 0f);
+        _boundVertices2D_trianle[1] = new Vector3(-0.5f, -0.5f, 0f);
+        _boundVertices2D_trianle[2] = new Vector3(0.5f, -0.5f, 0f);
     }
 
 
@@ -134,22 +138,28 @@ public class BoundCheckWindow : EditorWindow
                     _boundPosition2D_B = Handles.FreeMoveHandle(_boundPosition2D_B, Quaternion.identity, HandleUtility.GetHandleSize(_boundPosition2D_B) * 0.1f, Vector3.zero, Handles.DotCap);
                     break;
                 case BoundType2D.Box:
-                    {
-                        Handles.matrix = Matrix4x4.TRS(_boundPosition2D_A, Quaternion.identity, _boundSize2D);
-                        Handles.DrawPolyLine(VERTICES_BOX);
-                        Handles.matrix = Matrix4x4.identity;
-                    }
+                    Handles.matrix = Matrix4x4.TRS(_boundPosition2D_A, Quaternion.identity, _boundSize2D);
+                    Handles.DrawPolyLine(VERTICES_BOX_2D);
+                    Handles.matrix = Matrix4x4.identity;
                     break;
                 case BoundType2D.Circle:
-                    {
-                        Handles.matrix = Matrix4x4.TRS(_boundPosition2D_A, Quaternion.identity, _boundSize2D);
-                        Handles.DrawPolyLine(VERTICES_CIRCLE);
-                        Handles.matrix = Matrix4x4.identity;
-                    }
+                    Handles.matrix = Matrix4x4.TRS(_boundPosition2D_A, Quaternion.identity, _boundSize2D);
+                    Handles.DrawPolyLine(VERTICES_CIRCLE_2D);
+                    Handles.matrix = Matrix4x4.identity;
                     break;
                 case BoundType2D.Sector:
                     break;
                 case BoundType2D.Triangle:
+                    Vector3 tmp = _boundVertices2D_trianle[0] + (Vector3)_boundPosition2D_A;
+                    _boundVertices2D_trianle[0] = Handles.FreeMoveHandle(tmp, Quaternion.identity, HandleUtility.GetHandleSize(tmp) * 0.2f, Vector3.zero, Handles.SphereCap) - (Vector3)_boundPosition2D_A;
+                    tmp = _boundVertices2D_trianle[1] + (Vector3)_boundPosition2D_A;
+                    _boundVertices2D_trianle[1] = Handles.FreeMoveHandle(tmp, Quaternion.identity, HandleUtility.GetHandleSize(tmp) * 0.2f, Vector3.zero, Handles.SphereCap) - (Vector3)_boundPosition2D_A;
+                    tmp = _boundVertices2D_trianle[2] + (Vector3)_boundPosition2D_A;
+                    _boundVertices2D_trianle[2] = Handles.FreeMoveHandle(tmp, Quaternion.identity, HandleUtility.GetHandleSize(tmp) * 0.2f, Vector3.zero, Handles.SphereCap) - (Vector3)_boundPosition2D_A;
+                    Handles.matrix = Matrix4x4.TRS(_boundPosition2D_A, Quaternion.identity, _boundSize2D);
+                    Handles.DrawPolyLine(_boundVertices2D_trianle);
+                    Handles.DrawLine(_boundVertices2D_trianle[2], _boundVertices2D_trianle[0]);
+                    Handles.matrix = Matrix4x4.identity;
                     break;
             }
             switch(_checker2d)
@@ -190,9 +200,9 @@ public class BoundCheckWindow : EditorWindow
         EditorGUILayout.EndHorizontal();
         if(_dimension == DimensionType._2D)
         {
-            EditorGUILayout.BeginVertical("box");
-            //EditorGUILayout.Space();
+            EditorGUILayout.Separator();
             _bound2d = (BoundType2D)EditorGUILayout.EnumPopup("Bound Type", _bound2d);
+            EditorGUILayout.BeginVertical("box");
 
             string label = "Position";
             if (_bound2d == BoundType2D.Line) label += " A";
@@ -215,9 +225,10 @@ public class BoundCheckWindow : EditorWindow
             EditorGUILayout.Space();
             EditorGUILayout.EndVertical();
             EditorGUILayout.Separator();
-            EditorGUILayout.BeginVertical("box");
-            //EditorGUILayout.Space();
             _checker2d = (CheckerType2D)EditorGUILayout.EnumPopup("Checker Type", _checker2d);
+            EditorGUILayout.BeginVertical("box");
+            EditorGUILayout.Space();
+
             EditorGUILayout.Space();
             EditorGUILayout.EndVertical();
         }
