@@ -92,13 +92,12 @@ public class BoundCheckWindow : EditorWindow
     {
         VERTICES_CIRCLE_2D = new Vector3[SEGMENT + 1];
         for (int i = 0; i < SEGMENT + 1; ++i)
-            VERTICES_CIRCLE_2D[i] = new Vector3(Mathf.Sin(((float)i / SEGMENT) * Mathf.PI * 2), Mathf.Cos(((float)i / SEGMENT) * Mathf.PI * 2));
+            VERTICES_CIRCLE_2D[i] = new Vector2(Mathf.Sin(((float)i / SEGMENT) * Mathf.PI * 2), Mathf.Cos(((float)i / SEGMENT) * Mathf.PI * 2));
 
-        _boundVertices2D_trianle[0] = new Vector3(0f, 0.5f, 0f);
-        _boundVertices2D_trianle[1] = new Vector3(-0.5f, -0.5f, 0f);
-        _boundVertices2D_trianle[2] = new Vector3(0.5f, -0.5f, 0f);
+        _boundVertices2D_trianle[0] = new Vector2(0f, 0.5f);
+        _boundVertices2D_trianle[1] = new Vector2(-0.5f, -0.25f);
+        _boundVertices2D_trianle[2] = new Vector2(0.5f, -0.25f);
     }
-
 
     [MenuItem("TEST/BoundCheck")]
     static void Init()
@@ -130,7 +129,14 @@ public class BoundCheckWindow : EditorWindow
         EditorGUI.BeginChangeCheck();
         if (_dimension == DimensionType._2D)
         {
-            _boundPosition2D_A = Handles.FreeMoveHandle(_boundPosition2D_A, Quaternion.identity, HandleUtility.GetHandleSize(_boundPosition2D_A) * 0.1f, Vector3.zero, Handles.DotCap);
+            Vector3 center = (_boundVertices2D_trianle[0] + _boundVertices2D_trianle[1] + _boundVertices2D_trianle[2]) / 3;
+            Vector3 newCenter = Handles.FreeMoveHandle(center, Quaternion.identity, HandleUtility.GetHandleSize(center) * 0.1f, Vector3.zero, Handles.DotCap);
+            center = newCenter - center;
+            if (center != newCenter)
+                for(int i = 0; i < 3; ++i)
+                    _boundVertices2D_trianle[i] += center;
+            _boundPosition2D_A = newCenter;
+
             switch (_bound2d)
             {
                 case BoundType2D.Line:
@@ -148,18 +154,28 @@ public class BoundCheckWindow : EditorWindow
                     Handles.matrix = Matrix4x4.identity;
                     break;
                 case BoundType2D.Sector:
+                    Handles.matrix = Matrix4x4.TRS(_boundPosition2D_A, Quaternion.identity, _boundSize2D);
+                    float half = _boundAngle * 0.5f * Mathf.Deg2Rad;
+                    Handles.DrawLine(Vector2.zero, new Vector2(Mathf.Sin(-half), Mathf.Cos(half)));
+                    Handles.DrawLine(Vector2.zero, new Vector2(Mathf.Sin(half), Mathf.Cos(half)));
+                    Vector3[] vertArc = new Vector3[SEGMENT];
+                    for (int i = 0; i < SEGMENT; ++i)
+                    {
+                        float seg = _boundAngle * Mathf.Deg2Rad * i / (SEGMENT-1f) - half;
+                        vertArc[i] = new Vector2(Mathf.Sin(seg), Mathf.Cos(seg));
+                    }
+                    Handles.DrawPolyLine(vertArc);
+                    Handles.matrix = Matrix4x4.identity;
                     break;
                 case BoundType2D.Triangle:
-                    Vector3 tmp = _boundVertices2D_trianle[0] + (Vector3)_boundPosition2D_A;
-                    _boundVertices2D_trianle[0] = Handles.FreeMoveHandle(tmp, Quaternion.identity, HandleUtility.GetHandleSize(tmp) * 0.2f, Vector3.zero, Handles.SphereCap) - (Vector3)_boundPosition2D_A;
-                    tmp = _boundVertices2D_trianle[1] + (Vector3)_boundPosition2D_A;
-                    _boundVertices2D_trianle[1] = Handles.FreeMoveHandle(tmp, Quaternion.identity, HandleUtility.GetHandleSize(tmp) * 0.2f, Vector3.zero, Handles.SphereCap) - (Vector3)_boundPosition2D_A;
-                    tmp = _boundVertices2D_trianle[2] + (Vector3)_boundPosition2D_A;
-                    _boundVertices2D_trianle[2] = Handles.FreeMoveHandle(tmp, Quaternion.identity, HandleUtility.GetHandleSize(tmp) * 0.2f, Vector3.zero, Handles.SphereCap) - (Vector3)_boundPosition2D_A;
-                    Handles.matrix = Matrix4x4.TRS(_boundPosition2D_A, Quaternion.identity, _boundSize2D);
+                    Vector3 tmpT = _boundVertices2D_trianle[0];
+                    _boundVertices2D_trianle[0] = Handles.FreeMoveHandle(tmpT, Quaternion.identity, HandleUtility.GetHandleSize(tmpT) * 0.08f, Vector3.zero, Handles.SphereCap);
+                    tmpT = _boundVertices2D_trianle[1];
+                    _boundVertices2D_trianle[1] = Handles.FreeMoveHandle(tmpT, Quaternion.identity, HandleUtility.GetHandleSize(tmpT) * 0.08f, Vector3.zero, Handles.SphereCap);
+                    tmpT = _boundVertices2D_trianle[2];
+                    _boundVertices2D_trianle[2] = Handles.FreeMoveHandle(tmpT, Quaternion.identity, HandleUtility.GetHandleSize(tmpT) * 0.08f, Vector3.zero, Handles.SphereCap);
                     Handles.DrawPolyLine(_boundVertices2D_trianle);
                     Handles.DrawLine(_boundVertices2D_trianle[2], _boundVertices2D_trianle[0]);
-                    Handles.matrix = Matrix4x4.identity;
                     break;
             }
             switch(_checker2d)
@@ -206,7 +222,11 @@ public class BoundCheckWindow : EditorWindow
 
             string label = "Position";
             if (_bound2d == BoundType2D.Line) label += " A";
+            Vector2 posGap = _boundPosition2D_A;
             _boundPosition2D_A = EditorGUILayout.Vector2Field(label, _boundPosition2D_A);
+            posGap = _boundPosition2D_A - posGap;
+            for(int i = 0; i < 3; ++i)
+                _boundVertices2D_trianle[i] += (Vector3)posGap;
 
             if (_bound2d == BoundType2D.Line)
                 _boundPosition2D_B = EditorGUILayout.Vector2Field("Position B", _boundPosition2D_B);
@@ -219,6 +239,16 @@ public class BoundCheckWindow : EditorWindow
                         _boundVertices2D_trianle[i] = EditorGUILayout.Vector2Field("Vertex " + i, _boundVertices2D_trianle[i]);
                     --EditorGUI.indentLevel;
                 }
+            }
+            else if(_bound2d == BoundType2D.Circle)
+            {
+                // 일단 원. 타원은 나중에.
+                _boundSize2D.x = _boundSize2D.y = EditorGUILayout.FloatField("Radius", _boundSize2D.x);
+            }
+            else if(_bound2d == BoundType2D.Sector)
+            {
+                _boundSize2D.x = _boundSize2D.y = EditorGUILayout.FloatField("Radius", _boundSize2D.x);
+                _boundAngle = EditorGUILayout.FloatField("Angle", _boundAngle);
             }
             else
                 _boundSize2D = EditorGUILayout.Vector2Field("Size", _boundSize2D);
