@@ -40,13 +40,6 @@ public class BoundCheckWindow : EditorWindow
         Sphere,
     }
 
-    const int SEGMENT = 32;
-    readonly Vector3[] VERTICES_CIRCLE_2D;
-    readonly Vector3[] VERTICES_BOX_2D =
-            { new Vector3(-0.5f, 0.5f), new Vector3(0.5f, 0.5f)
-            , new Vector3(0.5f, -0.5f), new Vector3(-0.5f, -0.5f)
-            , new Vector3(-0.5f, 0.5f)};
-
     DimensionType _dimension = DimensionType._2D;
     BoundType2D _bound2d;
     BoundType3D _bound3d;
@@ -68,12 +61,10 @@ public class BoundCheckWindow : EditorWindow
     Quaternion _boundRotation3D = Quaternion.identity;
     #endregion
 
-    float _checkerRadius = 0f;
     float _checkerAngle = 45f;
     #region 2D Checker (Dot, Line, Ray, Box, LerpBox, Triangle, Circle, Sector)
     Vector2 _checkerPosition2D_A = Vector2.zero;
     Vector2 _checkerPosition2D_B = Vector2.right;
-    Vector2 _checkerDirection2D = new Vector2(0f, 1f);
     Vector2 _checkerSize2D = Vector2.one;
     Vector2[] _checkerVertices2D = new Vector2[3]; // only Triangle
     #endregion
@@ -90,10 +81,6 @@ public class BoundCheckWindow : EditorWindow
 
     BoundCheckWindow()
     {
-        VERTICES_CIRCLE_2D = new Vector3[SEGMENT + 1];
-        for (int i = 0; i < SEGMENT + 1; ++i)
-            VERTICES_CIRCLE_2D[i] = new Vector2(Mathf.Sin(((float)i / SEGMENT) * Mathf.PI * 2), Mathf.Cos(((float)i / SEGMENT) * Mathf.PI * 2));
-
         _boundVertices2D_trianle[0] = new Vector2(0f, 0.5f);
         _boundVertices2D_trianle[1] = new Vector2(-0.5f, -0.25f);
         _boundVertices2D_trianle[2] = new Vector2(0.5f, -0.25f);
@@ -129,12 +116,12 @@ public class BoundCheckWindow : EditorWindow
         EditorGUI.BeginChangeCheck();
         if (_dimension == DimensionType._2D)
         {
-            Vector3 center = (_boundVertices2D_trianle[0] + _boundVertices2D_trianle[1] + _boundVertices2D_trianle[2]) / 3;
-            Vector3 newCenter = Handles.FreeMoveHandle(center, Quaternion.identity, HandleUtility.GetHandleSize(center) * 0.1f, Vector3.zero, Handles.DotCap);
+            Vector2 center = (_boundVertices2D_trianle[0] + _boundVertices2D_trianle[1] + _boundVertices2D_trianle[2]) / 3;
+            Vector2 newCenter = Handles.FreeMoveHandle(center, Quaternion.identity, HandleUtility.GetHandleSize(center) * 0.1f, Vector3.zero, Handles.DotCap);
             center = newCenter - center;
             if (center != newCenter)
                 for(int i = 0; i < 3; ++i)
-                    _boundVertices2D_trianle[i] += center;
+                    _boundVertices2D_trianle[i] += (Vector3)center;
             _boundPosition2D_A = newCenter;
 
             switch (_bound2d)
@@ -145,26 +132,17 @@ public class BoundCheckWindow : EditorWindow
                     break;
                 case BoundType2D.Box:
                     Handles.matrix = Matrix4x4.TRS(_boundPosition2D_A, Quaternion.identity, _boundSize2D);
-                    Handles.DrawPolyLine(VERTICES_BOX_2D);
+                    HandlesExtension.DrawSquare();
                     Handles.matrix = Matrix4x4.identity;
                     break;
                 case BoundType2D.Circle:
                     Handles.matrix = Matrix4x4.TRS(_boundPosition2D_A, Quaternion.identity, _boundSize2D);
-                    Handles.DrawPolyLine(VERTICES_CIRCLE_2D);
+                    HandlesExtension.DrawCircle();
                     Handles.matrix = Matrix4x4.identity;
                     break;
                 case BoundType2D.Sector:
                     Handles.matrix = Matrix4x4.TRS(_boundPosition2D_A, Quaternion.identity, _boundSize2D);
-                    float half = _boundAngle * 0.5f * Mathf.Deg2Rad;
-                    Handles.DrawLine(Vector2.zero, new Vector2(Mathf.Sin(-half), Mathf.Cos(half)));
-                    Handles.DrawLine(Vector2.zero, new Vector2(Mathf.Sin(half), Mathf.Cos(half)));
-                    Vector3[] vertArc = new Vector3[SEGMENT];
-                    for (int i = 0; i < SEGMENT; ++i)
-                    {
-                        float seg = _boundAngle * Mathf.Deg2Rad * i / (SEGMENT-1f) - half;
-                        vertArc[i] = new Vector2(Mathf.Sin(seg), Mathf.Cos(seg));
-                    }
-                    Handles.DrawPolyLine(vertArc);
+                    HandlesExtension.DrawSector(_boundAngle);
                     Handles.matrix = Matrix4x4.identity;
                     break;
                 case BoundType2D.Triangle:
@@ -178,21 +156,39 @@ public class BoundCheckWindow : EditorWindow
                     Handles.DrawLine(_boundVertices2D_trianle[2], _boundVertices2D_trianle[0]);
                     break;
             }
-            switch(_checker2d)
+            _checkerPosition2D_A = Handles.FreeMoveHandle(_checkerPosition2D_A, Quaternion.identity, HandleUtility.GetHandleSize(_checkerPosition2D_A) * 0.1f, Vector3.zero, Handles.DotCap);
+            switch (_checker2d)
             {
                 case CheckerType2D.Dot:
                     break;
                 case CheckerType2D.Line:
+                    _checkerPosition2D_B = Handles.FreeMoveHandle(_checkerPosition2D_B, Quaternion.identity, HandleUtility.GetHandleSize(_checkerPosition2D_B) * 0.1f, Vector3.zero, Handles.DotCap);
+                    Handles.DrawLine(_checkerPosition2D_A, _checkerPosition2D_B);
                     break;
                 case CheckerType2D.Ray:
+                    //_checkerPosition2D_B.Normalize();
+                    //if(_checkerPosition2D_B.magnitude > 1f)
+                    _checkerPosition2D_B = Handles.FreeMoveHandle(_checkerPosition2D_B, Quaternion.identity, HandleUtility.GetHandleSize(_checkerPosition2D_B) * 0.1f, Vector3.zero, Handles.DotCap);
+                    //_checkerPosition2D_B.Normalize();
+                    Handles.ArrowCap(0, _checkerPosition2D_A, Quaternion.identity, HandleUtility.GetHandleSize(_checkerPosition2D_A) * 1.1f);
+                    Handles.DrawLine(_checkerPosition2D_A, _checkerPosition2D_B);
                     break;
                 case CheckerType2D.Box:
+                    Handles.matrix = Matrix4x4.TRS(_checkerPosition2D_A, Quaternion.identity, _checkerSize2D);
+                    HandlesExtension.DrawSquare();
+                    Handles.matrix = Matrix4x4.identity;
                     break;
                 case CheckerType2D.LerpBox:
                     break;
                 case CheckerType2D.Circle:
+                    Handles.matrix = Matrix4x4.TRS(_checkerPosition2D_A, Quaternion.identity, _checkerSize2D);
+                    HandlesExtension.DrawCircle();
+                    Handles.matrix = Matrix4x4.identity;
                     break;
                 case CheckerType2D.Sector:
+                    Handles.matrix = Matrix4x4.TRS(_checkerPosition2D_A, Quaternion.identity, _checkerSize2D);
+                    HandlesExtension.DrawSector(_checkerAngle);
+                    Handles.matrix = Matrix4x4.identity;
                     break;
                 case CheckerType2D.Triangle:
                     break;
