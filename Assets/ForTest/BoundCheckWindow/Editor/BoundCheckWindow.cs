@@ -83,11 +83,26 @@ public class BoundCheckWindow : EditorWindow
 
     bool _isIn = false;
 
+    readonly Texture2D _pixGreen;
+    readonly Texture2D _pixRed;
+
     BoundCheckWindow()
     {
         _boundVertices2D_triangle[0] = _checkerVertices2D_triangle[0] = new Vector2(0f, 0.5f);
         _boundVertices2D_triangle[1] = _checkerVertices2D_triangle[1] = new Vector2(-0.5f, -0.25f);
         _boundVertices2D_triangle[2] = _checkerVertices2D_triangle[2] = new Vector2(0.5f, -0.25f);
+
+        Color[] pix = new Color[1];
+        pix[0] = new Color(0f, 0.5f, 0.75f);
+        _pixGreen = new Texture2D(1, 1);
+        _pixGreen.SetPixels(pix);
+        _pixGreen.Apply();
+
+        pix = new Color[1];
+        pix[0] = new Color(1f, 0.5f, 0.5f);
+        _pixRed = new Texture2D(1, 1);
+        _pixRed.SetPixels(pix);
+        _pixRed.Apply();
     }
 
     [MenuItem("TEST/BoundCheck")]
@@ -332,30 +347,17 @@ public class BoundCheckWindow : EditorWindow
             _checker3d = (CheckerType3D)EditorGUILayout.EnumPopup("Checker Type", _checker3d);
         }
         EditorGUILayout.Separator();
-        EditorGUILayout.BeginVertical("box");
-
-        GUIStyle gs = new GUIStyle(GUI.skin.box); ;
-        if (_isIn)
-        {
-            Color[] pix = new Color[1];
-            pix[0] = Color.green;
-            Texture2D tex = new Texture2D(1, 1);
-            tex.SetPixels(pix);
-            tex.Apply();
-            gs.normal.background = tex;
-        }
-        else
-        {
-            Color[] pix = new Color[1];
-            pix[0] = Color.red;
-            Texture2D tex = new Texture2D(1, 1);
-            tex.SetPixels(pix);
-            tex.Apply();
-            gs.normal.background = tex;
-        }
-
-        EditorGUILayout.LabelField("In : " + _isIn.ToString(), gs);
-        EditorGUILayout.EndVertical();
+        EditorGUILayout.BeginHorizontal("box");
+        GUIStyle gs = new GUIStyle(GUI.skin.box);
+        gs.fixedWidth = 10; gs.fixedHeight = 14;
+        if (_isIn)  gs.normal.background = _pixGreen;
+        else        gs.normal.background = _pixRed;
+        GUILayout.Box(_pixGreen, gs);
+        GUIStyle alignCenter = new GUIStyle("label");
+        alignCenter.alignment = TextAnchor.MiddleCenter;
+        EditorGUILayout.LabelField("In : " + _isIn.ToString(), alignCenter);
+        GUILayout.Box(_pixGreen, gs);
+        EditorGUILayout.EndHorizontal();
         EditorGUILayout.EndVertical();
         if (EditorGUI.EndChangeCheck()) SceneView.RepaintAll();
     }
