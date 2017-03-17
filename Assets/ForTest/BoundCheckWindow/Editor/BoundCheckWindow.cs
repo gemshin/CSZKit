@@ -2,6 +2,7 @@
 using UnityEditor;
 using System.Collections;
 using System;
+using ZKit;
 
 public class BoundCheckWindow : EditorWindow
 {
@@ -51,7 +52,7 @@ public class BoundCheckWindow : EditorWindow
     Vector2 _boundPosition2D_A = Vector2.zero;
     Vector2 _boundPosition2D_B = Vector2.right;
     Vector2 _boundSize2D = Vector2.one;
-    Vector3[] _boundVertices2D_trianle = new Vector3[3]; // only Triangle
+    Vector3[] _boundVertices2D_triangle = new Vector3[3]; // only Triangle
     float _boundRotation2D = 0f;
     #endregion
 
@@ -66,7 +67,7 @@ public class BoundCheckWindow : EditorWindow
     Vector2 _checkerPosition2D_A = Vector2.zero;
     Vector2 _checkerPosition2D_B = Vector2.right;
     Vector2 _checkerSize2D = Vector2.one;
-    Vector2[] _checkerVertices2D = new Vector2[3]; // only Triangle
+    Vector3[] _checkerVertices2D_triangle = new Vector3[3]; // only Triangle
     #endregion
 
     #region 3D Checker (Dot, Line, Ray, Cube, Sphere)
@@ -77,13 +78,16 @@ public class BoundCheckWindow : EditorWindow
     Quaternion _checkerRotation3D = Quaternion.identity;
     #endregion
 
-    bool _VerticeTriangle2D_Foldout = true;
+    bool _boundVerticeTriangle2D_Foldout = true;
+    bool _checkerVerticeTriangle2D_Foldout = true;
+
+    bool _isIn = false;
 
     BoundCheckWindow()
     {
-        _boundVertices2D_trianle[0] = new Vector2(0f, 0.5f);
-        _boundVertices2D_trianle[1] = new Vector2(-0.5f, -0.25f);
-        _boundVertices2D_trianle[2] = new Vector2(0.5f, -0.25f);
+        _boundVertices2D_triangle[0] = _checkerVertices2D_triangle[0] = new Vector2(0f, 0.5f);
+        _boundVertices2D_triangle[1] = _checkerVertices2D_triangle[1] = new Vector2(-0.5f, -0.25f);
+        _boundVertices2D_triangle[2] = _checkerVertices2D_triangle[2] = new Vector2(0.5f, -0.25f);
     }
 
     [MenuItem("TEST/BoundCheck")]
@@ -95,7 +99,6 @@ public class BoundCheckWindow : EditorWindow
 
     #region
     void Start() {}
-    void Update() {}
     void OnDestroy()
     {
         SceneView.onSceneGUIDelegate -= OnSceneGUI;
@@ -107,8 +110,25 @@ public class BoundCheckWindow : EditorWindow
     void OnDisable()
     {
         //SceneView.onSceneGUIDelegate -= OnSceneGUI;
-    } 
+    }
     #endregion
+
+    void Update()
+    {
+        _isIn = false;
+        if (_dimension == DimensionType._2D)
+        {
+            if(_bound2d == BoundType2D.Line)
+            {
+                if(_checker2d == CheckerType2D.Line)
+                    _isIn = ZKit.Math.Collision2D.Line(_boundPosition2D_A, _boundPosition2D_B, _checkerPosition2D_A, _checkerPosition2D_B);
+            }
+        }
+        else
+        {
+
+        }
+    }
 
     void OnSceneGUI(SceneView sceneView)
     {
@@ -116,12 +136,11 @@ public class BoundCheckWindow : EditorWindow
         EditorGUI.BeginChangeCheck();
         if (_dimension == DimensionType._2D)
         {
-            Vector2 center = (_boundVertices2D_trianle[0] + _boundVertices2D_trianle[1] + _boundVertices2D_trianle[2]) / 3;
+            Vector2 center = (_boundVertices2D_triangle[0] + _boundVertices2D_triangle[1] + _boundVertices2D_triangle[2]) / 3;
             Vector2 newCenter = Handles.FreeMoveHandle(center, Quaternion.identity, HandleUtility.GetHandleSize(center) * 0.1f, Vector3.zero, Handles.DotCap);
-            center = newCenter - center;
             if (center != newCenter)
                 for(int i = 0; i < 3; ++i)
-                    _boundVertices2D_trianle[i] += (Vector3)center;
+                    _boundVertices2D_triangle[i] += (Vector3)(newCenter - center);
             _boundPosition2D_A = newCenter;
 
             switch (_bound2d)
@@ -146,32 +165,36 @@ public class BoundCheckWindow : EditorWindow
                     Handles.matrix = Matrix4x4.identity;
                     break;
                 case BoundType2D.Triangle:
-                    Vector3 tmpT = _boundVertices2D_trianle[0];
-                    _boundVertices2D_trianle[0] = Handles.FreeMoveHandle(tmpT, Quaternion.identity, HandleUtility.GetHandleSize(tmpT) * 0.08f, Vector3.zero, Handles.SphereCap);
-                    tmpT = _boundVertices2D_trianle[1];
-                    _boundVertices2D_trianle[1] = Handles.FreeMoveHandle(tmpT, Quaternion.identity, HandleUtility.GetHandleSize(tmpT) * 0.08f, Vector3.zero, Handles.SphereCap);
-                    tmpT = _boundVertices2D_trianle[2];
-                    _boundVertices2D_trianle[2] = Handles.FreeMoveHandle(tmpT, Quaternion.identity, HandleUtility.GetHandleSize(tmpT) * 0.08f, Vector3.zero, Handles.SphereCap);
-                    Handles.DrawPolyLine(_boundVertices2D_trianle);
-                    Handles.DrawLine(_boundVertices2D_trianle[2], _boundVertices2D_trianle[0]);
+                    _boundVertices2D_triangle[0] = Handles.FreeMoveHandle(_boundVertices2D_triangle[0]
+                        , Quaternion.identity, HandleUtility.GetHandleSize(_boundVertices2D_triangle[0]) * 0.08f, Vector3.zero, Handles.SphereCap);
+                    _boundVertices2D_triangle[1] = Handles.FreeMoveHandle(_boundVertices2D_triangle[1]
+                        , Quaternion.identity, HandleUtility.GetHandleSize(_boundVertices2D_triangle[1]) * 0.08f, Vector3.zero, Handles.SphereCap);
+                    _boundVertices2D_triangle[2] = Handles.FreeMoveHandle(_boundVertices2D_triangle[2]
+                        , Quaternion.identity, HandleUtility.GetHandleSize(_boundVertices2D_triangle[2]) * 0.08f, Vector3.zero, Handles.SphereCap);
+                    Handles.DrawPolyLine(_boundVertices2D_triangle);
+                    Handles.DrawLine(_boundVertices2D_triangle[2], _boundVertices2D_triangle[0]);
                     break;
             }
-            _checkerPosition2D_A = Handles.FreeMoveHandle(_checkerPosition2D_A, Quaternion.identity, HandleUtility.GetHandleSize(_checkerPosition2D_A) * 0.1f, Vector3.zero, Handles.DotCap);
+
+            center = (_checkerVertices2D_triangle[0] + _checkerVertices2D_triangle[1] + _checkerVertices2D_triangle[2]) / 3;
+            newCenter = Handles.FreeMoveHandle(center, Quaternion.identity, HandleUtility.GetHandleSize(center) * 0.1f, Vector3.zero, Handles.DotCap);
+            if (center != newCenter)
+                for (int i = 0; i < 3; ++i)
+                    _checkerVertices2D_triangle[i] += (Vector3)(newCenter - center);
+            _checkerPosition2D_A = newCenter;
             switch (_checker2d)
             {
-                case CheckerType2D.Dot:
-                    break;
+                //case CheckerType2D.Dot:
+                //    break;
                 case CheckerType2D.Line:
                     _checkerPosition2D_B = Handles.FreeMoveHandle(_checkerPosition2D_B, Quaternion.identity, HandleUtility.GetHandleSize(_checkerPosition2D_B) * 0.1f, Vector3.zero, Handles.DotCap);
                     Handles.DrawLine(_checkerPosition2D_A, _checkerPosition2D_B);
                     break;
                 case CheckerType2D.Ray:
-                    //_checkerPosition2D_B.Normalize();
-                    //if(_checkerPosition2D_B.magnitude > 1f)
                     _checkerPosition2D_B = Handles.FreeMoveHandle(_checkerPosition2D_B, Quaternion.identity, HandleUtility.GetHandleSize(_checkerPosition2D_B) * 0.1f, Vector3.zero, Handles.DotCap);
-                    //_checkerPosition2D_B.Normalize();
-                    Handles.ArrowCap(0, _checkerPosition2D_A, Quaternion.identity, HandleUtility.GetHandleSize(_checkerPosition2D_A) * 1.1f);
-                    Handles.DrawLine(_checkerPosition2D_A, _checkerPosition2D_B);
+                    Vector3 dirTmp = _checkerPosition2D_B - _checkerPosition2D_A;
+                    Handles.ArrowCap(0, _checkerPosition2D_A, Quaternion.FromToRotation(Vector3.forward, dirTmp), HandleUtility.GetHandleSize(_checkerPosition2D_A) * 1.1f);
+                    Handles.DrawLine(_checkerPosition2D_A, (Vector3)_checkerPosition2D_A + dirTmp * 100f);
                     break;
                 case CheckerType2D.Box:
                     Handles.matrix = Matrix4x4.TRS(_checkerPosition2D_A, Quaternion.identity, _checkerSize2D);
@@ -191,6 +214,14 @@ public class BoundCheckWindow : EditorWindow
                     Handles.matrix = Matrix4x4.identity;
                     break;
                 case CheckerType2D.Triangle:
+                    _checkerVertices2D_triangle[0] = Handles.FreeMoveHandle(_checkerVertices2D_triangle[0]
+                        , Quaternion.identity, HandleUtility.GetHandleSize(_checkerVertices2D_triangle[0]) * 0.08f, Vector3.zero, Handles.SphereCap);
+                    _checkerVertices2D_triangle[1] = Handles.FreeMoveHandle(_checkerVertices2D_triangle[1]
+                        , Quaternion.identity, HandleUtility.GetHandleSize(_checkerVertices2D_triangle[1]) * 0.08f, Vector3.zero, Handles.SphereCap);
+                    _checkerVertices2D_triangle[2] = Handles.FreeMoveHandle(_checkerVertices2D_triangle[2]
+                        , Quaternion.identity, HandleUtility.GetHandleSize(_checkerVertices2D_triangle[2]) * 0.08f, Vector3.zero, Handles.SphereCap);
+                    Handles.DrawPolyLine(_checkerVertices2D_triangle);
+                    Handles.DrawLine(_checkerVertices2D_triangle[2], _checkerVertices2D_triangle[0]);
                     break;
             }
         }
@@ -214,34 +245,34 @@ public class BoundCheckWindow : EditorWindow
         {
             EditorGUILayout.Separator();
             _bound2d = (BoundType2D)EditorGUILayout.EnumPopup("Bound Type", _bound2d);
+            #region Bound UI
             EditorGUILayout.BeginVertical("box");
-
-            string label = "Position";
-            if (_bound2d == BoundType2D.Line) label += " A";
+            string labelTmp = "Position";
+            if (_bound2d == BoundType2D.Line) labelTmp += " A";
             Vector2 posGap = _boundPosition2D_A;
-            _boundPosition2D_A = EditorGUILayout.Vector2Field(label, _boundPosition2D_A);
+            _boundPosition2D_A = EditorGUILayout.Vector2Field(labelTmp, _boundPosition2D_A);
             posGap = _boundPosition2D_A - posGap;
-            for(int i = 0; i < 3; ++i)
-                _boundVertices2D_trianle[i] += (Vector3)posGap;
+            for (int i = 0; i < 3; ++i)
+                _boundVertices2D_triangle[i] += (Vector3)posGap;
 
             if (_bound2d == BoundType2D.Line)
                 _boundPosition2D_B = EditorGUILayout.Vector2Field("Position B", _boundPosition2D_B);
-            else if(_bound2d == BoundType2D.Triangle)
+            else if (_bound2d == BoundType2D.Triangle)
             {
-                if (_VerticeTriangle2D_Foldout = EditorGUILayout.Foldout(_VerticeTriangle2D_Foldout, "Vertices"))
+                if (_boundVerticeTriangle2D_Foldout = EditorGUILayout.Foldout(_boundVerticeTriangle2D_Foldout, "Vertices"))
                 {
                     ++EditorGUI.indentLevel;
                     for (int i = 0; i < 3; ++i)
-                        _boundVertices2D_trianle[i] = EditorGUILayout.Vector2Field("Vertex " + i, _boundVertices2D_trianle[i]);
+                        _boundVertices2D_triangle[i] = EditorGUILayout.Vector2Field("Vertex " + i, _boundVertices2D_triangle[i]);
                     --EditorGUI.indentLevel;
                 }
             }
-            else if(_bound2d == BoundType2D.Circle)
+            else if (_bound2d == BoundType2D.Circle)
             {
                 // 일단 원. 타원은 나중에.
                 _boundSize2D.x = _boundSize2D.y = EditorGUILayout.FloatField("Radius", _boundSize2D.x);
             }
-            else if(_bound2d == BoundType2D.Sector)
+            else if (_bound2d == BoundType2D.Sector)
             {
                 _boundSize2D.x = _boundSize2D.y = EditorGUILayout.FloatField("Radius", _boundSize2D.x);
                 _boundAngle = EditorGUILayout.FloatField("Angle", _boundAngle);
@@ -249,21 +280,82 @@ public class BoundCheckWindow : EditorWindow
             else
                 _boundSize2D = EditorGUILayout.Vector2Field("Size", _boundSize2D);
             EditorGUILayout.Space();
-            EditorGUILayout.EndVertical();
+            EditorGUILayout.EndVertical(); 
+            #endregion
             EditorGUILayout.Separator();
             _checker2d = (CheckerType2D)EditorGUILayout.EnumPopup("Checker Type", _checker2d);
+            #region Checker
             EditorGUILayout.BeginVertical("box");
-            EditorGUILayout.Space();
+            labelTmp = "Position";
+            if (_checker2d == CheckerType2D.Line) labelTmp += " A";
+            posGap = _checkerPosition2D_A;
+            _checkerPosition2D_A = EditorGUILayout.Vector2Field(labelTmp, _checkerPosition2D_A);
+            posGap = _checkerPosition2D_A - posGap;
+            for (int i = 0; i < 3; ++i)
+                _checkerVertices2D_triangle[i] += (Vector3)posGap;
 
+            if (_checker2d == CheckerType2D.Line)
+                _checkerPosition2D_B = EditorGUILayout.Vector2Field("Position B", _checkerPosition2D_B);
+            else if ( _checker2d == CheckerType2D.Ray)
+                _checkerPosition2D_B = EditorGUILayout.Vector2Field("Dir Pos", _checkerPosition2D_B);
+            else if (_checker2d == CheckerType2D.Triangle)
+            {
+                if (_checkerVerticeTriangle2D_Foldout = EditorGUILayout.Foldout(_checkerVerticeTriangle2D_Foldout, "Vertices"))
+                {
+                    ++EditorGUI.indentLevel;
+                    for (int i = 0; i < 3; ++i)
+                        _checkerVertices2D_triangle[i] = EditorGUILayout.Vector2Field("Vertex " + i, _checkerVertices2D_triangle[i]);
+                    --EditorGUI.indentLevel;
+                }
+            }
+            else if (_checker2d == CheckerType2D.Circle)
+            {
+                // 일단 원. 타원은 나중에.
+                _checkerSize2D.x = _checkerSize2D.y = EditorGUILayout.FloatField("Radius", _checkerSize2D.x);
+            }
+            else if (_checker2d == CheckerType2D.Sector)
+            {
+                _checkerSize2D.x = _checkerSize2D.y = EditorGUILayout.FloatField("Radius", _checkerSize2D.x);
+                _checkerAngle = EditorGUILayout.FloatField("Angle", _checkerAngle);
+            }
+            else if(_checker2d != CheckerType2D.Dot)
+                _checkerSize2D = EditorGUILayout.Vector2Field("Size", _checkerSize2D);
             EditorGUILayout.Space();
             EditorGUILayout.EndVertical();
+            #endregion
+        }
+        else // 3D
+        {
+            EditorGUILayout.Separator();
+            _bound3d = (BoundType3D)EditorGUILayout.EnumPopup("Bound Type", _bound3d);
+            EditorGUILayout.Separator();
+            _checker3d = (CheckerType3D)EditorGUILayout.EnumPopup("Checker Type", _checker3d);
+        }
+        EditorGUILayout.Separator();
+        EditorGUILayout.BeginVertical("box");
+
+        GUIStyle gs = new GUIStyle(GUI.skin.box); ;
+        if (_isIn)
+        {
+            Color[] pix = new Color[1];
+            pix[0] = Color.green;
+            Texture2D tex = new Texture2D(1, 1);
+            tex.SetPixels(pix);
+            tex.Apply();
+            gs.normal.background = tex;
         }
         else
         {
-            _bound3d = (BoundType3D)EditorGUILayout.EnumPopup("Bound Type", _bound3d);
-            _checker3d = (CheckerType3D)EditorGUILayout.EnumPopup("Checker Type", _checker3d);
+            Color[] pix = new Color[1];
+            pix[0] = Color.red;
+            Texture2D tex = new Texture2D(1, 1);
+            tex.SetPixels(pix);
+            tex.Apply();
+            gs.normal.background = tex;
         }
 
+        EditorGUILayout.LabelField("In : " + _isIn.ToString(), gs);
+        EditorGUILayout.EndVertical();
         EditorGUILayout.EndVertical();
         if (EditorGUI.EndChangeCheck()) SceneView.RepaintAll();
     }
