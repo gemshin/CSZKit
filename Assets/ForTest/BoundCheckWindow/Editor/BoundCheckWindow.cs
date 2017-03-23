@@ -135,8 +135,22 @@ public class BoundCheckWindow : EditorWindow
         {
             if(_bound2d == BoundType2D.Line)
             {
-                if(_checker2d == CheckerType2D.Line)
+                if (_checker2d == CheckerType2D.Line)
                     _isIn = ZKit.Math.Collision2D.Line(_boundPosition2D_A, _boundPosition2D_B, _checkerPosition2D_A, _checkerPosition2D_B);
+                else if (_checker2d == CheckerType2D.Ray)
+                {
+                    Vector2 dir = _checkerPosition2D_B - _checkerPosition2D_A;
+                    _isIn = ZKit.Math.Collision2D.LineRay(_boundPosition2D_A, _boundPosition2D_B, _checkerPosition2D_A, dir.normalized);
+                }
+                else if (_checker2d == CheckerType2D.Circle)
+                    _isIn = ZKit.Math.Collision2D.LineCircle(_boundPosition2D_A, _boundPosition2D_B, _checkerPosition2D_A, _checkerSize2D.x);
+                else if (_checker2d == CheckerType2D.Box)
+                    _isIn = ZKit.Math.Collision2D.LineBox(_boundPosition2D_A, _boundPosition2D_B, _checkerPosition2D_A, _checkerSize2D, 0f);//, _checkerAngle);
+            }
+            else if(_bound2d == BoundType2D.Box)
+            {
+                if (_checker2d == CheckerType2D.Ray)
+                    _isIn = ZKit.Math.Collision2D.RayBox(_checkerPosition2D_A, _checkerPosition2D_B, _boundPosition2D_A, _boundSize2D, 0f);
             }
         }
         else
@@ -352,11 +366,11 @@ public class BoundCheckWindow : EditorWindow
         gs.fixedWidth = 10; gs.fixedHeight = 14;
         if (_isIn)  gs.normal.background = _pixGreen;
         else        gs.normal.background = _pixRed;
-        GUILayout.Box(_pixGreen, gs);
+        GUILayout.Box("", gs);
         GUIStyle alignCenter = new GUIStyle("label");
         alignCenter.alignment = TextAnchor.MiddleCenter;
         EditorGUILayout.LabelField("In : " + _isIn.ToString(), alignCenter);
-        GUILayout.Box(_pixGreen, gs);
+        GUILayout.Box("", gs);
         EditorGUILayout.EndHorizontal();
         EditorGUILayout.EndVertical();
         if (EditorGUI.EndChangeCheck()) SceneView.RepaintAll();
