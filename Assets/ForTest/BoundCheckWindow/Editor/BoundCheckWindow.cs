@@ -68,6 +68,7 @@ public class BoundCheckWindow : EditorWindow
     Vector2 _checkerPosition2D_B = Vector2.right;
     Vector2 _checkerSize2D = Vector2.one;
     Vector3[] _checkerVertices2D_triangle = new Vector3[3]; // only Triangle
+    float _checkerRotation2D = 0f;
     #endregion
 
     #region 3D Checker (Dot, Line, Ray, Cube, Sphere)
@@ -145,12 +146,22 @@ public class BoundCheckWindow : EditorWindow
                 else if (_checker2d == CheckerType2D.Circle)
                     _isIn = ZKit.Math.Collision2D.LineCircle(_boundPosition2D_A, _boundPosition2D_B, _checkerPosition2D_A, _checkerSize2D.x);
                 else if (_checker2d == CheckerType2D.Box)
-                    _isIn = ZKit.Math.Collision2D.LineBox(_boundPosition2D_A, _boundPosition2D_B, _checkerPosition2D_A, _checkerSize2D, 0f);//, _checkerAngle);
+                    _isIn = ZKit.Math.Collision2D.LineBox(_boundPosition2D_A, _boundPosition2D_B, _checkerPosition2D_A, _checkerSize2D, _checkerRotation2D);//, _checkerAngle);
             }
             else if(_bound2d == BoundType2D.Box)
             {
                 if (_checker2d == CheckerType2D.Ray)
-                    _isIn = ZKit.Math.Collision2D.RayBox(_checkerPosition2D_A, _checkerPosition2D_B, _boundPosition2D_A, _boundSize2D, 0f);
+                    _isIn = ZKit.Math.Collision2D.RayBox(_checkerPosition2D_A, _checkerPosition2D_B, _boundPosition2D_A, _boundSize2D, _boundRotation2D);
+            }
+            else if(_bound2d == BoundType2D.Circle)
+            {
+                if (_checker2d == CheckerType2D.Dot)
+                    _isIn = ZKit.Math.Collision2D.DotCircle(_checkerPosition2D_A, _boundPosition2D_A, _boundSize2D.x);
+            }
+            else if(_bound2d == BoundType2D.Sector)
+            {
+                if (_checker2d == CheckerType2D.Dot)
+                    _isIn = ZKit.Math.Collision2D.DotSector(_checkerPosition2D_A, _boundPosition2D_A, _boundSize2D.x, _boundAngle, _boundRotation2D);
             }
         }
         else
