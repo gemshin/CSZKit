@@ -150,7 +150,9 @@ public class BoundCheckWindow : EditorWindow
             }
             else if(_bound2d == BoundType2D.Box)
             {
-                if (_checker2d == CheckerType2D.Ray)
+                if (_checker2d == CheckerType2D.Dot)
+                    _isIn = ZKit.Math.Collision2D.DotBox(_checkerPosition2D_A, _boundPosition2D_A, _boundRotation2D, _boundSize2D);
+                else if (_checker2d == CheckerType2D.Ray)
                     _isIn = ZKit.Math.Collision2D.RayBox(_checkerPosition2D_A, _checkerPosition2D_B, _boundPosition2D_A, _boundSize2D, _boundRotation2D);
             }
             else if(_bound2d == BoundType2D.Circle)
@@ -162,6 +164,8 @@ public class BoundCheckWindow : EditorWindow
             {
                 if (_checker2d == CheckerType2D.Dot)
                     _isIn = ZKit.Math.Collision2D.DotSector(_checkerPosition2D_A, _boundPosition2D_A, _boundSize2D.x, _boundAngle, _boundRotation2D);
+                else if (_checker2d == CheckerType2D.Circle)
+                    _isIn = ZKit.Math.Collision2D.CircleSector(_checkerPosition2D_A, _checkerSize2D.x, _boundPosition2D_A, _boundSize2D.x, _boundAngle, _boundRotation2D);
             }
         }
         else
@@ -213,6 +217,7 @@ public class BoundCheckWindow : EditorWindow
                         , Quaternion.identity, HandleUtility.GetHandleSize(_boundVertices2D_triangle[2]) * 0.08f, Vector3.zero, Handles.SphereCap);
                     Handles.DrawPolyLine(_boundVertices2D_triangle);
                     Handles.DrawLine(_boundVertices2D_triangle[2], _boundVertices2D_triangle[0]);
+                    Handles.DrawLine(_boundPosition2D_A, new Vector3(_boundPosition2D_A.x, _boundPosition2D_A.y) + Vector3.Cross(_boundVertices2D_triangle[1] - _boundVertices2D_triangle[0], _boundVertices2D_triangle[2] - _boundVertices2D_triangle[0]));
                     break;
             }
 

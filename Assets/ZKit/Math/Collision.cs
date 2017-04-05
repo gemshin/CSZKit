@@ -239,17 +239,38 @@ namespace ZKit.Math
 
             return false;
         }
-
+        public static bool DotBox(Vector2 dotPosition, Vector2 boxPosition, float boxRotateAngle, Vector2 boxSize)
+        {
+            Vector2 boxSpaceDot = Misc.TransformCoord(boxPosition, boxRotateAngle, dotPosition);
+            if (Mathf.Abs(boxSpaceDot.x) > boxSize.x * 0.5f) return false;
+            if (Mathf.Abs(boxSpaceDot.y) > boxSize.y * 0.5f) return false;
+            return true;
+        }
+        /// <summary>
+        /// CCW
+        /// </summary>
+        /// <param name="dotPosition"></param>
+        /// <param name="tri1"></param>
+        /// <param name="tri2"></param>
+        /// <param name="tri3"></param>
+        /// <returns></returns>
+        //public static bool DotTriangle(Vector2 dotPosition, Vector2 tri1, Vector2 tri2, Vector2 tri3)
+        //{
+        //    Vector2 to2 = tri2 - tri1;
+        //    Vector2 to3 = tri3 - tri1;
+        //    Vector3.Cross(to2, to3);
+        //}
+        // todo
         public static bool LineSector(Vector2 a1, Vector2 a2, Vector2 sectorPosition, float radius, float betweenAngle, float rotateAngle)
         {
             return false;
         }
-
+        // todo
         public static bool BoxSector(Vector2 boxCenter, Vector2 boxSize, float boxRotateAngle, Vector2 sectorPosition, float radius, float betweenAngle, float sectorRotateAngle)
         {
             return false;
         }
-
+        // todo bug
         public static bool CircleSector(Vector2 circlePosition, float circleRadius, Vector2 sectorPosition, float sectorRadius, float betweenAngle, float sectorRotateAngle)
         {
             Vector2 sectorSpaceCircle = circlePosition - sectorPosition;
@@ -265,11 +286,12 @@ namespace ZKit.Math
             sectorSpaceCircle.y = y;
 
             float tanR, tanL;
-            GetExTangentAngleOnCircle(sectorSpaceCircle, circle.radius, Vector2.zero, out tanR, out tanL, true);
+            if (!Misc.GetExTangentAngleOnCircle(sectorSpaceCircle, circleRadius, Vector2.zero, out tanR, out tanL, true)) // 섹터가 원 안에 있다.
+                return true;
 
             if (float.IsNaN(tanR) || float.IsNaN(tanL)) return true;
 
-            float sectorHalfAng = sector.angle * 0.5f;
+            float sectorHalfAng = betweenAngle * 0.5f;
 
             float circleAng = Mathf.Atan2(sectorSpaceCircle.x, sectorSpaceCircle.y) * Mathf.Rad2Deg;
             if (circleAng >= 0f && sectorHalfAng >= circleAng) return true;
@@ -280,6 +302,8 @@ namespace ZKit.Math
 
             if (tanR >= 0f && sectorHalfAng >= tanR * Mathf.Rad2Deg) return true;
             if (tanR < 0f && -sectorHalfAng <= tanR * Mathf.Rad2Deg) return true;
+
+            // !!!!!!!!! 부채꼴의 양 끝쪽에 충돌 계산을 더 해야 한다. 지금은 양 끝쪽에 약간의 오차가 발생한다. !!!!!!!!!!!!!!!
 
             //Vector2 sectorL, sectorR;
 
